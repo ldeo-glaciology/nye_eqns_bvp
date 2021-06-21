@@ -54,10 +54,9 @@ for i = 1:del_t:m-1 % loop through time
     Q(:,i) = interp1(s5.x,s5.y(2,:),x_array);
     
     % Next use current N, Q, to get next step's S
-    for j = 1:del_s:n % loop through space
         
-        S(j,i+1) = S(j,i) + del_t*(abs(Q(j,i))^3/S(j,i)^(8/3) - S(j,i)*N(j,i)^3);
-    end
+    S(:,i+1) = S(:,i) + del_t.*(abs(Q(:,i)).^3./S(:,i).^(8/3) - S(:,i).*N(:,i).^3);
+
     h(1,i+1) = h(1,i) + del_t*lambda_l*(Q_in-Q(1,i))/hL_pl1;
     
 end
