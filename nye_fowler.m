@@ -1,10 +1,7 @@
 % Constants
-lambda_l = 1;
-Q_in = 1;
+lambda_l = 3.2;
+Q_in = 0.1;
 hL_pl1 = 1;
-beta_r = 1;
-delta = 1;
-del_zeta = 1;
 
 P.psi = 0.1;
 P.e = 0.0034;
@@ -14,7 +11,7 @@ P.M = 0.001;
 
 % Grid point sizing
 n = 10; % space grid points
-m = 10; % time grid points
+m = 150; % time grid points
 del_s = 1; % space step size
 del_t = 1; % time step size
 
@@ -29,7 +26,7 @@ N = zeros(n,m);
 S(:,1) = 0.1*ones(n,1);
 
 % Initializing boundary conditions
-h(1,1) = 10;
+h(1,1) = 100;
 NL = 0;  % effective pressure at the lake
 Nt = 0;  % effective pressure at the terminus
 
