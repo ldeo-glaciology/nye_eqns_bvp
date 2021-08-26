@@ -1,9 +1,10 @@
 % Constants
 lambda_l = 3.2;
-Q_in = 0.1;
+Q_in = 5*10^-4;
 hL_pl1 = 1;
+beta_r = 0.9;
 
-P.psi = 0.1;
+P.psi = 1;
 P.e = 0.0034;
 P.d = 1;
 P.r = 0.9;
@@ -11,8 +12,8 @@ P.M = 0.001;
 
 % Grid point sizing
 n = 10; % space grid points
-m = 150; % time grid points
-del_s = 1; % space step size
+m = 1000; % time grid points
+del_s = 0.01; % space step size
 del_t = 1; % time step size
 
 % Initializing arrays to hold data
@@ -23,15 +24,15 @@ Q = zeros(n,m);
 N = zeros(n,m);
 
 % Creating initial conditions
-S(:,1) = 0.1*ones(n,1);
+S(:,1) = 0.002*ones(n,1);
 
 % Initializing boundary conditions
-h(1,1) = 100;
-NL = 0;  % effective pressure at the lake
+h(1,1) = 1/3;
+NL = beta_r*(1-h(1,1));  % effective pressure at the lake
 Nt = 0;  % effective pressure at the terminus
 
 % Looping to solve
-for i = 1:del_t:m-1 % loop through time
+for i = 1:m-1 % loop through time
     
     % Solve BVP for N_i, Q_i - adapted from Nye_BVP
     % Initialize array in space
@@ -55,8 +56,29 @@ for i = 1:del_t:m-1 % loop through time
     S(:,i+1) = S(:,i) + del_t.*(abs(Q(:,i)).^3./S(:,i).^(8/3) - S(:,i).*N(:,i).^3);
 
     h(1,i+1) = h(1,i) + del_t*lambda_l*(Q_in-Q(1,i))/hL_pl1;
+    NL = beta_r*(1-h(1,i+1));
     
 end
+
+% Making plots
+figure('Name','Evolution of Drainage (Dimensionless)');
+subplot(3,1,1);
+plot(h);
+xlabel('Time');
+ylabel('Height');
+title('Height over time');
+
+subplot(3,1,2);
+plot(Q(n,:));
+xlabel('Time');
+ylabel('Flow Rate');
+title('Flow at exit over time');
+
+subplot(3,1,3);
+plot(S(n,:));
+xlabel('Time');
+ylabel('Channel Area');
+title('Area at exit over time');
 
 % Function for guessing
 function y = guess(x,P)
@@ -76,3 +98,5 @@ function res = bc_N(ya,yb,NL,Nt)
 res = [ya(1)-NL
     yb(1)-Nt];
 end
+
+% TODO: Make function for generating scales
