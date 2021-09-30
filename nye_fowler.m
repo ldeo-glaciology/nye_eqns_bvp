@@ -65,7 +65,7 @@ P.d = N0/(s0*psi_0);
 Q_in = 10/Q0;
 hL_pl1 = 1;
 beta_r = 0.9;
-u_raw = 1000; % m/y
+u_raw = 100; % m/y
 u = u_raw*t0/(s_to_y*s0);
 
 % Need to adjust
@@ -75,7 +75,7 @@ P.M = 0.00; %
 
 % Grid point sizing
 n = 10; % space grid points
-m = 10000; % time grid points
+m = 20000; % time grid points
 del_s = 0.01; % space step size
 del_t = 0.1; % time step size
 
@@ -129,8 +129,9 @@ for i = 2:m-1 % loop through time
     Q(:,i) = interp1(s5.x,s5.y(2,:),x_array);
     
     % Next use current N, Q, S to get next step's S and h
-    glacier_v_adjust = n*u.*gradient(S(:,i));
-    S(:,i+1) = S(:,i) + del_t.*(abs(Q(:,i)).^3./S(:,i).^(8/3) - S(:,i).*N(:,i).^3 - glacier_v_adjust);
+    dSdx = gradient(S(:,i))./gradient(x_array)';
+    %glacier_v_adjust = n*u.*gradient(S(:,i));
+    S(:,i+1) = S(:,i) + del_t.*(abs(Q(:,i)).^3./S(:,i).^(8/3) - S(:,i).*N(:,i).^3 - u*dSdx);
     h(1,i+1) = h(1,i) + del_t*P.lambda*(Q_in-Q(1,i))/hL_pl1;
     if h(1,i+1) <= 0 || S(1,i+1) <= 0 % Adding error handling for if channel closes/lake drains
         end_time = i+1;
@@ -157,7 +158,7 @@ end
 function dydx = Nye_NQ(x,y,xmesh,S_i,P)
 S_x = interp1(xmesh,S_i,x);
 psi_x = interp1(xmesh,P.psi_var,x);
-dydx = [(y(2,:).*abs(y(2,:))./S_x.^(8/3) - P.psi )/P.d % change between constant/variable psi
+dydx = [(y(2,:).*abs(y(2,:))./S_x.^(8/3) - psi_x )/P.d % change between constant/variable psi
     P.e*(P.r-1)*abs(y(2,:)).^3./S_x.^(8/3) + P.e*S_x.*y(1,:).^3 + P.M];
 end
 
