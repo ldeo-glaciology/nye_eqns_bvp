@@ -1,5 +1,5 @@
 % Run Solver
-[t,h,Q,S,u] = nf_solver();
+[t,h,Q,S,N,u] = nf_solver();
 
 %% Plotting
 
@@ -32,7 +32,7 @@ legend('Location','northwest');
 %% Functions
 
 % Function for solver
-function [time_years,h_meters,Q_m3ps,S_m2,u] = nf_solver()
+function [time_years,h_meters,Q_m3ps,S_m2,N_Pa,u] = nf_solver()
 % Constants
 rho_w = 1000; % kg/m^3 (water density)
 rho_i = 900; %kg/m^3 (ice density)
@@ -65,8 +65,12 @@ P.d = N0/(s0*psi_0);
 Q_in = 10/Q0;
 hL_pl1 = 1;
 beta_r = 0.9;
-u_raw = 100; % m/y
-u = u_raw*t0/(s_to_y*s0);
+%u_raw = 100; % m/y
+%u = u_raw*t0/(s_to_y*s0);
+tau_raw = 100000; % Pa
+tau = tau_raw/N0;
+C = 6; % For sliding law
+alpha = C*t0/(s_to_y*s0); % For sliding law
 
 % Need to adjust
 P.lambda = 3.2;
@@ -76,7 +80,6 @@ P.M = 0.00; %
 % Grid point sizing
 n = 10; % space grid points
 m = 20000; % time grid points
-del_s = 0.01; % space step size
 del_t = 0.1; % time step size
 
 % Initializing arrays to hold data
@@ -85,7 +88,7 @@ h = zeros(1,m); % Lake level is 1-D array evolving with time
 S = zeros(n,m);
 Q = zeros(n,m);
 N = zeros(n,m);
-
+u = zeros(n,m);
 % Creating initial conditions
 S(:,1) = 5*ones(n,1)/S0;
 
@@ -94,7 +97,7 @@ P.psi_var = P.psi*(1-3*exp(-20.*[0:n-1]'));
 % Initializing boundary conditions
 h(1,1) = 1/3;
 NL = beta_r*(1-h(1,1));  % effective pressure at the lake
-Nt = 0;  % effective pressure at the terminus
+Nt = 0.0001;%rho_i*g*100/N0;  % effective pressure at the terminus - changed to constants
 end_time = m-1;
 
 % Initial step with guessing function
@@ -111,7 +114,9 @@ s5 = bvp5c(@(x,y) Nye_NQ(x,y, x_array, S(:,1) ,P),...
     solinit, opts);
 N(:,1) = interp1(s5.x,s5.y(1,:),x_array);
 Q(:,1) = interp1(s5.x,s5.y(2,:),x_array);
-S(:,2) = S(:,1) + del_t.*(abs(Q(:,1)).^3./S(:,1).^(8/3) - S(:,1).*N(:,1).^3);
+u(:,1) = alpha*tau./N(:,1);
+dSdx = gradient(S(:,1))./gradient(x_array)';
+S(:,2) = S(:,1) + del_t.*(abs(Q(:,1)).^3./S(:,1).^(8/3) - S(:,1).*N(:,1).^3 - u(:,1).*dSdx);
 h(1,2) = h(1,1) + del_t*P.lambda*(Q_in-Q(1,1))/hL_pl1;
 NL = beta_r*(1-h(1,2));
 
@@ -127,11 +132,10 @@ for i = 2:m-1 % loop through time
     solinit, opts);
     N(:,i) = interp1(s5.x,s5.y(1,:),x_array);
     Q(:,i) = interp1(s5.x,s5.y(2,:),x_array);
-    
+    u(:,i) = alpha*tau./N(:,i);
     % Next use current N, Q, S to get next step's S and h
     dSdx = gradient(S(:,i))./gradient(x_array)';
-    %glacier_v_adjust = n*u.*gradient(S(:,i));
-    S(:,i+1) = S(:,i) + del_t.*(abs(Q(:,i)).^3./S(:,i).^(8/3) - S(:,i).*N(:,i).^3 - u*dSdx);
+    S(:,i+1) = S(:,i) + del_t.*(abs(Q(:,i)).^3./S(:,i).^(8/3) - S(:,i).*N(:,i).^3 - u(:,1).*dSdx);
     h(1,i+1) = h(1,i) + del_t*P.lambda*(Q_in-Q(1,i))/hL_pl1;
     if h(1,i+1) <= 0 || S(1,i+1) <= 0 % Adding error handling for if channel closes/lake drains
         end_time = i+1;
@@ -146,6 +150,7 @@ time_years = t0*del_t*[1:end_time]/s_to_y;
 h_meters = h0*h(1,1:end_time);
 Q_m3ps = Q0*Q(:,1:end_time);
 S_m2 = S0*S(:,1:end_time);
+N_Pa = N0*N(:,1:end_time);
 end
 
 % Function for guessing
