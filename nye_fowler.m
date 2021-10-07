@@ -1,5 +1,5 @@
 % Run Solver
-[t,h,Q,S,N,u] = nf_solver();
+[s,t,h,Q,S,N,u] = nf_solver();
 
 %% Plotting
 
@@ -16,7 +16,7 @@ plot(t,Q(1,:),'DisplayName','Lake Exit');
 hold on;
 plot(t,Q(end,:),'--','DisplayName','Channel Exit');
 xlabel('Time (years)');
-ylabel('Flow Rate (m^3 s^-1)');
+ylabel('Flow Rate (m^3 s^(-1))');
 title('Flow over time');
 legend('Location','northwest');
 
@@ -29,10 +29,44 @@ ylabel('Channel Area (m^2)');
 title('Channel area over time');
 legend('Location','northwest');
 
+%% New Plotting
+figure('Name', 'Colormaps');
+subplot(4,1,1);
+imagesc(t,s,N);
+xlabel('Time (years)');
+ylabel('Channel Position (km)');
+title('Effective Pressure Colormap');
+cbarN = colorbar;
+ylabel(cbarN, "Effective Pressure (Pa)")
+
+subplot(4,1,2);
+imagesc(t,s,Q);
+xlabel('Time (years)');
+ylabel('Channel Position (km)');
+title('Channel Flow Colormap');
+cbarQ = colorbar;
+ylabel(cbarQ, "Flow (m^3/s)")
+
+subplot(4,1,3);
+imagesc(t,s,S);
+xlabel('Time (years)');
+ylabel('Channel Position (km)');
+title('Channel Cross-sectional Area Colormap');
+cbarS = colorbar;
+ylabel(cbarS, "Cross sectional area (m^2)")
+
+subplot(4,1,4);
+imagesc(t,s,u);
+xlabel('Time (years)');
+ylabel('Channel Position (km)');
+title('Glacier Velocity Colormap');
+cbaru = colorbar;
+ylabel(cbaru, "Glacier Velocity (m/y)")
+
 %% Functions
 
 % Function for solver
-function [time_years,h_meters,Q_m3ps,S_m2,N_Pa,u] = nf_solver()
+function [s_km,time_years,h_meters,Q_m3ps,S_m2,N_Pa,u_mpy] = nf_solver()
 % Constants
 rho_w = 1000; % kg/m^3 (water density)
 rho_i = 900; %kg/m^3 (ice density)
@@ -78,8 +112,8 @@ P.psi = 1;
 P.M = 0.00; % 
 
 % Grid point sizing
-n = 10; % space grid points
-m = 20000; % time grid points
+n = 100; % space grid points
+m = 5000; % time grid points
 del_t = 0.1; % time step size
 
 % Initializing arrays to hold data
@@ -92,7 +126,6 @@ u = zeros(n,m);
 % Creating initial conditions
 S(:,1) = 5*ones(n,1)/S0;
 
-P.psi_var = P.psi*(1-3*exp(-20.*[0:n-1]'));
 
 % Initializing boundary conditions
 h(1,1) = 1/3;
@@ -103,6 +136,7 @@ end_time = m-1;
 % Initial step with guessing function
 % Initialize array in space
 x_array = linspace(0,1,n);
+P.psi_var = P.psi*(1-3*exp(-20.*x_array));
 
 % Options for BVP solver - directly taken from Nye_BVP
 opts = bvpset('RelTol',0.00000001,'AbsTol',0.0000001,'Stats','on');
@@ -112,9 +146,9 @@ solinit= bvpinit(x_array, @(x) guess(x,P));
 s5 = bvp5c(@(x,y) Nye_NQ(x,y, x_array, S(:,1) ,P),...
     @(ya,yb) bc_N(ya,yb,NL,Nt),...
     solinit, opts);
-N(:,1) = interp1(s5.x,s5.y(1,:),x_array);
-Q(:,1) = interp1(s5.x,s5.y(2,:),x_array);
-u(:,1) = alpha*tau./N(:,1);
+N(:,1) = interp1(s5.x,s5.y(1,:),x_array)';
+Q(:,1) = interp1(s5.x,s5.y(2,:),x_array)';
+u(:,1) = 0;%alpha*tau./N(:,1);
 dSdx = gradient(S(:,1))./gradient(x_array)';
 S(:,2) = S(:,1) + del_t.*(abs(Q(:,1)).^3./S(:,1).^(8/3) - S(:,1).*N(:,1).^3 - u(:,1).*dSdx);
 h(1,2) = h(1,1) + del_t*P.lambda*(Q_in-Q(1,1))/hL_pl1;
@@ -130,9 +164,9 @@ for i = 2:m-1 % loop through time
     s5 = bvp5c(@(x,y) Nye_NQ(x,y, x_array, S(:,i) ,P),...
     @(ya,yb) bc_N(ya,yb,NL,Nt),...
     solinit, opts);
-    N(:,i) = interp1(s5.x,s5.y(1,:),x_array);
-    Q(:,i) = interp1(s5.x,s5.y(2,:),x_array);
-    u(:,i) = alpha*tau./N(:,i);
+    N(:,i) = interp1(s5.x,s5.y(1,:),x_array)';
+    Q(:,i) = interp1(s5.x,s5.y(2,:),x_array)';
+    u(:,i) = 0;%alpha*tau./N(:,i);
     % Next use current N, Q, S to get next step's S and h
     dSdx = gradient(S(:,i))./gradient(x_array)';
     S(:,i+1) = S(:,i) + del_t.*(abs(Q(:,i)).^3./S(:,i).^(8/3) - S(:,i).*N(:,i).^3 - u(:,1).*dSdx);
@@ -146,11 +180,13 @@ for i = 2:m-1 % loop through time
 end
 
 % Convert to scale properly
+s_km = s0*x_array/1000;
 time_years = t0*del_t*[1:end_time]/s_to_y;
 h_meters = h0*h(1,1:end_time);
 Q_m3ps = Q0*Q(:,1:end_time);
 S_m2 = S0*S(:,1:end_time);
 N_Pa = N0*N(:,1:end_time);
+u_mpy = u*s0*s_to_y/t0;
 end
 
 % Function for guessing
