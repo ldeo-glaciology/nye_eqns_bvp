@@ -16,7 +16,7 @@ plot(t,Q(1,:),'DisplayName','Lake Exit');
 hold on;
 plot(t,Q(end,:),'--','DisplayName','Channel Exit');
 xlabel('Time (years)');
-ylabel('Flow Rate (m^3 s^(-1))');
+ylabel('Flow Rate (m^3/s');
 title('Flow over time');
 legend('Location','northwest');
 
@@ -79,7 +79,6 @@ n_prime = 0.1; % m^-1/3 s (hydraulic roughness)
 f = 6.6*n_prime^2; 
 s_to_y = 60*60*24*365.25;
 
-
 % Scales
 s0 = 10*10^3; % m
 Q0 = 1500; % m^3/s
@@ -102,9 +101,9 @@ beta_r = 0.9;
 %u_raw = 100; % m/y
 %u = u_raw*t0/(s_to_y*s0);
 tau_raw = 100000; % Pa
-tau = tau_raw/N0;
-C = 6; % For sliding law
-alpha = C*t0/(s_to_y*s0); % For sliding law
+tau = tau_raw/N0; 
+C = 2*10^-20; % For sliding law
+alpha = C*(N0^3)*t0/(s_to_y*s0); % For sliding law
 
 % Need to adjust
 P.lambda = 3.2;
@@ -112,8 +111,8 @@ P.psi = 1;
 P.M = 0.00; % 
 
 % Grid point sizing
-n = 100; % space grid points
-m = 5000; % time grid points
+n = 10; % space grid points
+m = 20000; % time grid points
 del_t = 0.1; % time step size
 
 % Initializing arrays to hold data
@@ -130,7 +129,7 @@ S(:,1) = 5*ones(n,1)/S0;
 % Initializing boundary conditions
 h(1,1) = 1/3;
 NL = beta_r*(1-h(1,1));  % effective pressure at the lake
-Nt = 0.0001;%rho_i*g*100/N0;  % effective pressure at the terminus - changed to constants
+Nt = rho_i*g*10/N0;  % effective pressure at the terminus - changed to constants
 end_time = m-1;
 
 % Initial step with guessing function
@@ -148,7 +147,7 @@ s5 = bvp5c(@(x,y) Nye_NQ(x,y, x_array, S(:,1) ,P),...
     solinit, opts);
 N(:,1) = interp1(s5.x,s5.y(1,:),x_array)';
 Q(:,1) = interp1(s5.x,s5.y(2,:),x_array)';
-u(:,1) = 0;%alpha*tau./N(:,1);
+u(:,1) = alpha*(tau^4)./N(:,1);
 dSdx = gradient(S(:,1))./gradient(x_array)';
 S(:,2) = S(:,1) + del_t.*(abs(Q(:,1)).^3./S(:,1).^(8/3) - S(:,1).*N(:,1).^3 - u(:,1).*dSdx);
 h(1,2) = h(1,1) + del_t*P.lambda*(Q_in-Q(1,1))/hL_pl1;
@@ -166,7 +165,7 @@ for i = 2:m-1 % loop through time
     solinit, opts);
     N(:,i) = interp1(s5.x,s5.y(1,:),x_array)';
     Q(:,i) = interp1(s5.x,s5.y(2,:),x_array)';
-    u(:,i) = 0;%alpha*tau./N(:,i);
+    u(:,i) = alpha*(tau^4)./N(:,i);
     % Next use current N, Q, S to get next step's S and h
     dSdx = gradient(S(:,i))./gradient(x_array)';
     S(:,i+1) = S(:,i) + del_t.*(abs(Q(:,i)).^3./S(:,i).^(8/3) - S(:,i).*N(:,i).^3 - u(:,1).*dSdx);
