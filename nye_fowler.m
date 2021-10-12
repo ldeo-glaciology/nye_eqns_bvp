@@ -29,7 +29,6 @@ ylabel('Channel Area (m^2)');
 title('Channel area over time');
 legend('Location','northwest');
 
-%% New Plotting
 figure('Name', 'Colormaps');
 subplot(4,1,1);
 imagesc(t,s,N);
@@ -61,7 +60,8 @@ xlabel('Time (years)');
 ylabel('Channel Position (km)');
 title('Glacier Velocity Colormap');
 cbaru = colorbar;
-ylabel(cbaru, "Glacier Velocity (m/y)")
+ylabel(cbaru, "Glacier Velocity (m/y)");
+set(gca,'ColorScale','log');
 
 %% Functions
 
@@ -103,7 +103,7 @@ beta_r = 0.9;
 tau_raw = 100000; % Pa
 tau = tau_raw/N0; 
 C = 2*10^-20; % For sliding law
-alpha = C*(N0^3)*t0/(s_to_y*s0); % For sliding law
+alpha = C*(N0^3)*t0/s0; % For sliding law
 
 % Need to adjust
 P.lambda = 3.2;
@@ -111,7 +111,7 @@ P.psi = 1;
 P.M = 0.00; % 
 
 % Grid point sizing
-n = 10; % space grid points
+n = 100; % space grid points
 m = 20000; % time grid points
 del_t = 0.1; % time step size
 
@@ -129,7 +129,7 @@ S(:,1) = 5*ones(n,1)/S0;
 % Initializing boundary conditions
 h(1,1) = 1/3;
 NL = beta_r*(1-h(1,1));  % effective pressure at the lake
-Nt = rho_i*g*10/N0;  % effective pressure at the terminus - changed to constants
+Nt = rho_i*g*1/N0;  % effective pressure at the terminus - changed to constants
 end_time = m-1;
 
 % Initial step with guessing function
