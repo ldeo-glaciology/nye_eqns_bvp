@@ -1,70 +1,3 @@
-% Run Solver
-[s,t,h,Q,S,N,u] = nf_solver();
-
-%% Plotting
-
-% Making plots
-figure('Name','Evolution of Drainage');
-subplot(3,1,1);
-plot(t,h);
-xlabel('Time (years)');
-ylabel('Height (m)');
-title('Lake height over time');
-
-subplot(3,1,2);
-plot(t,Q(1,:),'DisplayName','Lake Exit');
-hold on;
-plot(t,Q(end,:),'--','DisplayName','Channel Exit');
-xlabel('Time (years)');
-ylabel('Flow Rate (m^3/s');
-title('Flow over time');
-legend('Location','northwest');
-
-subplot(3,1,3);
-plot(t,S(1,:),'DisplayName','Lake Exit'); % now plotting area at lake
-hold on;
-plot(t,S(end,:),'DisplayName','Channel Exit');
-xlabel('Time (years)');
-ylabel('Channel Area (m^2)');
-title('Channel area over time');
-legend('Location','northwest');
-
-figure('Name', 'Colormaps');
-subplot(4,1,1);
-imagesc(t,s,N);
-xlabel('Time (years)');
-ylabel('Channel Position (km)');
-title('Effective Pressure Colormap');
-cbarN = colorbar;
-ylabel(cbarN, "Effective Pressure (Pa)")
-
-subplot(4,1,2);
-imagesc(t,s,Q);
-xlabel('Time (years)');
-ylabel('Channel Position (km)');
-title('Channel Flow Colormap');
-cbarQ = colorbar;
-ylabel(cbarQ, "Flow (m^3/s)")
-
-subplot(4,1,3);
-imagesc(t,s,S);
-xlabel('Time (years)');
-ylabel('Channel Position (km)');
-title('Channel Cross-sectional Area Colormap');
-cbarS = colorbar;
-ylabel(cbarS, "Cross sectional area (m^2)")
-
-subplot(4,1,4);
-imagesc(t,s,u);
-xlabel('Time (years)');
-ylabel('Channel Position (km)');
-title('Glacier Velocity Colormap');
-cbaru = colorbar;
-ylabel(cbaru, "Glacier Velocity (m/y)");
-set(gca,'ColorScale','log');
-
-%% Functions
-
 % Function for solver
 function [s_km,time_years,h_meters,Q_m3ps,S_m2,N_Pa,u_mpy] = nf_solver()
 % Constants
@@ -139,7 +72,7 @@ P.psi_var = P.psi*(1-3*exp(-20.*x_array));
 
 % Options for BVP solver - directly taken from Nye_BVP
 opts = bvpset('RelTol',0.00000001,'AbsTol',0.0000001,'Stats','on');
-solinit= bvpinit(x_array, @(x) guess(x,P));
+solinit= bvpinit(x_array, @(x) Nyeguess(x,P));
 
 % Solve with initial guess
 s5 = bvp5c(@(x,y) Nye_NQ(x,y, x_array, S(:,1) ,P),...
@@ -186,26 +119,6 @@ Q_m3ps = Q0*Q(:,1:end_time);
 S_m2 = S0*S(:,1:end_time);
 N_Pa = N0*N(:,1:end_time);
 u_mpy = u*s0*s_to_y/t0;
-end
-
-% Function for guessing
-function y = guess(x,P)
-y = [sin(x*pi)
-    0.001+(P.M)*x]; % try making first 0 nonzero, but small
-end
-
-% Function for N-Q equations
-function dydx = Nye_NQ(x,y,xmesh,S_i,P)
-S_x = interp1(xmesh,S_i,x);
-psi_x = interp1(xmesh,P.psi_var,x);
-dydx = [(y(2,:).*abs(y(2,:))./S_x.^(8/3) - psi_x )/P.d % change between constant/variable psi
-    P.e*(P.r-1)*abs(y(2,:)).^3./S_x.^(8/3) + P.e*S_x.*y(1,:).^3 + P.M];
-end
-
-% Function for boundary conditions
-function res = bc_N(ya,yb,NL,Nt) 
-res = [ya(1)-NL
-    yb(1)-Nt];
 end
 
 
