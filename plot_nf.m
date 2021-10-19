@@ -1,5 +1,9 @@
 % Run Solver
-[s,t,h,Q,S,N,u] = nf_solver();
+tic;
+space_grid = 100;
+time_step = 1000;
+[s,t,h,Q,S,N,u] = nf_solver(space_grid,time_step);
+toc;
 
 %% Plotting
 set(groot,'defaulttextinterpreter','latex');

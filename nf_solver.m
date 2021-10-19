@@ -1,5 +1,5 @@
 % Function for solver
-function [s_km,time_years,h_meters,Q_m3ps,S_m2,N_Pa,u_mpy] = nf_solver()
+function [s_km,time_years,h_meters,Q_m3ps,S_m2,N_Pa,u_mpy] = nf_solver(grid_space,time_step)
 % Constants
 rho_w = 1000; % kg/m^3 (water density)
 rho_i = 900; %kg/m^3 (ice density)
@@ -44,30 +44,28 @@ P.psi = 1;
 P.M = 0.00; % 
 
 % Grid point sizing
-n = 100; % space grid points
-m = 20000; % time grid points
 del_t = 0.1; % time step size
 
 % Initializing arrays to hold data
-h = zeros(1,m); % Lake level is 1-D array evolving with time
+h = zeros(1,time_step); % Lake level is 1-D array evolving with time
 % Other arrays evolve with time and along the channel
-S = zeros(n,m);
-Q = zeros(n,m);
-N = zeros(n,m);
-u = zeros(n,m);
+S = zeros(grid_space,time_step);
+Q = zeros(grid_space,time_step);
+N = zeros(grid_space,time_step);
+u = zeros(grid_space,time_step);
 % Creating initial conditions
-S(:,1) = 5*ones(n,1)/S0;
+S(:,1) = 5*ones(grid_space,1)/S0;
 
 
 % Initializing boundary conditions
 h(1,1) = 1/3;
 NL = beta_r*(1-h(1,1));  % effective pressure at the lake
 Nt = rho_i*g*1/N0;  % effective pressure at the terminus - changed to constants
-end_time = m-1;
+end_time = time_step-1;
 
 % Initial step with guessing function
 % Initialize array in space
-x_array = linspace(0,1,n);
+x_array = linspace(0,1,grid_space);
 P.psi_var = P.psi*(1-3*exp(-20.*x_array));
 
 % Options for BVP solver - directly taken from Nye_BVP
@@ -87,7 +85,7 @@ h(1,2) = h(1,1) + del_t*P.lambda*(Q_in-Q(1,1))/hL_pl1;
 NL = beta_r*(1-h(1,2));
 
 % Looping to solve for rest of time
-for i = 2:m-1 % loop through time
+for i = 2:time_step-1 % loop through time
 
     % Guess
     solinit= bvpinit(x_array, @(x) [interp1(s5.x,s5.y(1,:),x)

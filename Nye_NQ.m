@@ -7,6 +7,10 @@ function dydx = Nye_NQ(x,y,xmesh,S_i,P) % equation to solve
 
 S_x = interp1(xmesh,S_i,x);
 psi_x = interp1(xmesh,P.psi_var,x);
-dydx = [(y(2,:).*abs(y(2,:))./S_x.^(8/3) - psi_x )/P.d % change between constant/variable psi
-    P.e*(P.r-1)*abs(y(2,:)).^3./S_x.^(8/3) + P.e*S_x.*y(1,:).^3 + P.M];
+
+S83 = S_x.^(8/3);
+N = y(1,:);
+Q = y(2,:);
+dydx = [(Q.*abs(Q)./S83 - psi_x )/P.d % change between constant/variable psi
+    P.e*(P.r-1)*abs(Q).^3./S83 + P.e*S_x.*N.^3 + P.M]; % Use just P.M for efficiency
 end
