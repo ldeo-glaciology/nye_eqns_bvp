@@ -99,7 +99,7 @@ for i = 2:time_step-1 % loop through time
     u(:,i) = alpha*(tau^4)./N(:,i);
     % Next use current N, Q, S to get next step's S and h
     dSdx = gradient(S(:,i))./gradient(x_array)';
-    S(:,i+1) = S(:,i) + del_t.*(abs(Q(:,i)).^3./S(:,i).^(8/3) - S(:,i).*N(:,i).^3 - u(:,1).*dSdx);
+    S(:,i+1) = S(:,i) + del_t.*(abs(Q(:,i)).^3./S(:,i).^(8/3) - S(:,i).*N(:,i).^3 - u(:,i).*dSdx);
     h(1,i+1) = h(1,i) + del_t*P.lambda*(Q_in-Q(1,i))/hL_pl1;
     if h(1,i+1) <= 0 || S(1,i+1) <= 0 % Adding error handling for if channel closes/lake drains
         end_time = i+1;

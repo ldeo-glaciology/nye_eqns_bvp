@@ -1,7 +1,7 @@
 % Run Solver
 tic;
 space_grid = 100;
-time_step = 1000;
+time_step = 10000;
 [s,t,h,Q,S,N,u] = nf_solver(space_grid,time_step);
 toc;
 
