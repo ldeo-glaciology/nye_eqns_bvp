@@ -41,8 +41,11 @@ alpha = C*(N0^3)*t0/s0; % For sliding law
 % Need to adjust
 P.lambda = 3.2;
 P.psi = 1;
-P.M = 0.00; % 
+P.M = 5*10^-4/M0; 
 
+% Testing hack-y velocity max
+umax = 1000/(s0*s_to_y/t0);
+gamma = alpha*(tau^4)/umax;
 % Grid point sizing
 del_t = 0.1; % time step size
 
@@ -78,7 +81,7 @@ s5 = bvp5c(@(x,y) Nye_NQ(x,y, x_array, S(:,1) ,P),...
     solinit, opts);
 N(:,1) = interp1(s5.x,s5.y(1,:),x_array)';
 Q(:,1) = interp1(s5.x,s5.y(2,:),x_array)';
-u(:,1) = alpha*(tau^4)./N(:,1);
+u(:,1) = alpha*(tau^4)./(N(:,1)+gamma);
 dSdx = gradient(S(:,1))./gradient(x_array)';
 S(:,2) = S(:,1) + del_t.*(abs(Q(:,1)).^3./S(:,1).^(8/3) - S(:,1).*N(:,1).^3 - u(:,1).*dSdx);
 h(1,2) = h(1,1) + del_t*P.lambda*(Q_in-Q(1,1))/hL_pl1;
@@ -96,7 +99,7 @@ for i = 2:time_step-1 % loop through time
     solinit, opts);
     N(:,i) = interp1(s5.x,s5.y(1,:),x_array)';
     Q(:,i) = interp1(s5.x,s5.y(2,:),x_array)';
-    u(:,i) = alpha*(tau^4)./N(:,i);
+    u(:,i) = alpha*(tau^4)./(N(:,i)+gamma);
     % Next use current N, Q, S to get next step's S and h
     dSdx = gradient(S(:,i))./gradient(x_array)';
     S(:,i+1) = S(:,i) + del_t.*(abs(Q(:,i)).^3./S(:,i).^(8/3) - S(:,i).*N(:,i).^3 - u(:,i).*dSdx);
