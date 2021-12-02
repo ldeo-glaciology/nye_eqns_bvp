@@ -5,3 +5,4 @@ A condensed version history for nf_bvp.ipnb can be found below:
 
 - v1.0: Python Version of N-F solver solving the base equations
 - v2.1: Added a velocity adjustment using a basic sliding law 
+- v3.1.1: Added a psi defined by ice thickness (with heavy constraints)
